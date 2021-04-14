@@ -9,6 +9,7 @@ import { ProcessQueryResultStatus } from './processQueryResultStatus';
 import { ProcessQueryResult } from './processQueryResult';
 import { SavedQuery } from './savedQuery';
 import { OutputFormat } from './outputFormat';
+import DocProvider from './schema';
 
 export class JsonPathExtension {
     static NoJsonDocumentErrorMsg = "Active editor doesn't show a valid JSON file - please open a valid JSON file first";
@@ -57,7 +58,7 @@ export class JsonPathExtension {
         }
 
         const content = this.resultFormatter.format(result.result, createJson);
-        await this.showContent(content, createJson);
+        await this.showContent(content, createJson, [(activeTextEditor.viewColumn || 0) + 1]);
     }
 
     async runSavedQuery(activeTextEditor: vscode.TextEditor | undefined) {
@@ -89,7 +90,7 @@ export class JsonPathExtension {
 
         const createJson = selectedQuery.output === OutputFormat.Json;
         const content = this.resultFormatter.format(result.result, createJson);
-        await this.showContent(content, createJson);
+        await this.showContent(content, createJson, [(activeTextEditor.viewColumn || 0) + 1]);
     }
 
     private handleError(result: ProcessQueryResult) {
@@ -121,10 +122,13 @@ export class JsonPathExtension {
         }
     }
 
-    private async showContent(content: string, createJson: boolean) {
-        const language = createJson ? 'json' : 'text';
-        const doc = await this.vscode.openTextDocument({ content, language });
-        await this.vscode.showTextDocument(doc);
+    private async showContent(content: string, createJson: boolean, vscodeConfig: [vscode.ViewColumn, boolean?]) {
+        const language = createJson ? 'json' : 'plaintext';
+        const uri = DocProvider.encodeContent(content);
+        const doc = await this.vscode.openTextDocument(uri);
+        // @ts-ignore
+        await vscode.languages.setTextDocumentLanguage(doc, language);
+        await this.vscode.showTextDocument(doc, ...vscodeConfig);
     }
 
     private getSavedQueries(): SavedQuery[] | undefined {

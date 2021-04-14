@@ -5,6 +5,7 @@ import { JsonPathQueryEngine } from './jsonPathQueryEngine';
 import { ResultFormatter } from './resultFormatter';
 import { JsonPathExtension } from './jsonPathExtension';
 import { VSCodeFunctions } from './vsCodeFunctions';
+import DocProvider from './schema';
 
 export function activate(context: vscode.ExtensionContext) {
     const queryEngine = new JsonPathQueryEngine();
@@ -18,6 +19,17 @@ export function activate(context: vscode.ExtensionContext) {
         getConfiguration: vscode.workspace.getConfiguration,
         showQuickPick: vscode.window.showQuickPick
     };
+
+    const JsonDocProvider = new DocProvider();
+
+    context.subscriptions.push(
+      vscode.Disposable.from(
+        vscode.workspace.registerTextDocumentContentProvider(
+          DocProvider.scheme,
+          JsonDocProvider
+        )
+      )
+    )
 
     const jsonPathPlainText = vscode.commands.registerCommand('jsonPathExtract.queryToPlainText', () => {
         const jpe = new JsonPathExtension(queryEngine, resultFormatter, vscodeFunctions);
